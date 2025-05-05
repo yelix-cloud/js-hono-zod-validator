@@ -1,6 +1,7 @@
 import { zValidator } from '@hono/zod-validator';
 import { YelixHonoMiddleware } from '@yelix/hono';
 import type { ZodSchema } from 'zod';
+import { schemaGenerator } from "./zodToType.ts";
 
 /**
  * Defines the possible sources from which data can be parsed for validation.
@@ -18,10 +19,13 @@ function zValidatorYelix<T extends ZodSchema>(
   from: parsePaths,
   schema: T
 ): YelixHonoMiddleware {
+  const oapiSchema = schemaGenerator(from, schema);
+  
   return new YelixHonoMiddleware('zValidator', zValidator(from, schema), {
     _yelixKeys: ['requestValidation'],
     from,
-    schema,
+    zodSchema: schema,
+    schema: oapiSchema,
   });
 }
 
