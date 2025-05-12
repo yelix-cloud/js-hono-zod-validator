@@ -11,8 +11,10 @@ export function schemaGenerator<T extends ZodSchema>(
     const requerieds = getRequiredKeys(schema as unknown as ZodObject<any>);
     oapiSchema = {
       'application/json': {
-        schema: zodToType(schema),
-        required: requerieds,
+        schema: {
+          ...zodToType(schema),
+          required: requerieds,
+        },
       },
     };
   } else if (from === 'form') {
