@@ -23,14 +23,14 @@ export function schemaGenerator<T extends ZodSchema>(
         schema: zodToType(schema),
       },
     };
-  } else if (['query', 'header', 'cookie', 'path'].includes(from)) {
+  } else if (['query', 'header', 'cookie', 'param'].includes(from)) {
     oapiSchema = _generateParametersFromZodObject(
       schema as unknown as ZodObject<any>,
       from
     );
   } else {
     console.warn(
-      `zValidatorYelix: The ${from} type is not supported. The only supported types are: json, form, query, header, cookie, and path.`
+      `zValidatorYelix: The ${from} type is not supported. The only supported types are: json, form, query, header, cookie, and param.`
     );
   }
 
