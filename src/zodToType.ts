@@ -30,7 +30,7 @@ export function schemaGenerator<T extends ZodSchema>(
     );
   } else {
     console.warn(
-      `zValidatorYelix: The ${from} type is not supported. The only supported types are: json, form, query, header, cookie, and path.`
+      `zValidatorYelix: The ${from} type is not supported. The only supported types are: json, form, query, header, cookie, and param.`
     );
   }
 
