@@ -18,7 +18,7 @@ const schema = z.object({
     bio: z.string().max(500).optional(),
     website: z.string().url().optional(),
   }),
-  preferences: z.enum(['dark', 'light']).optional(),
+  preferences: z.enum(["dark", "light"]).optional(),
 });
 
 const ot = zodToType(schema);

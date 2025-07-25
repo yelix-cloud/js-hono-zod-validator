@@ -1,36 +1,36 @@
 // deno-lint-ignore-file no-explicit-any
-import { z, type ZodObject, type ZodSchema, type ZodTypeAny } from 'zod';
-import type { parsePaths } from '../mod.ts';
+import { z, type ZodObject, type ZodSchema, type ZodTypeAny } from "zod";
+import type { parsePaths } from "../mod.ts";
 
 export function schemaGenerator<T extends ZodSchema>(
   from: parsePaths,
-  schema: T
+  schema: T,
 ): any {
   let oapiSchema: any = {};
-  if (from === 'json') {
+  if (from === "json") {
     const requerieds = getRequiredKeys(schema as unknown as ZodObject<any>);
     oapiSchema = {
-      'application/json': {
+      "application/json": {
         schema: {
           ...zodToType(schema),
           required: requerieds,
         },
       },
     };
-  } else if (from === 'form') {
+  } else if (from === "form") {
     oapiSchema = {
-      'application/x-www-form-urlencoded': {
+      "application/x-www-form-urlencoded": {
         schema: zodToType(schema),
       },
     };
-  } else if (['query', 'header', 'cookie', 'path'].includes(from)) {
+  } else if (["query", "header", "cookie", "path"].includes(from)) {
     oapiSchema = _generateParametersFromZodObject(
       schema as unknown as ZodObject<any>,
-      from
+      from,
     );
   } else {
     console.warn(
-      `zValidatorYelix: The ${from} type is not supported. The only supported types are: json, form, query, header, cookie, and path.`
+      `zValidatorYelix: The ${from} type is not supported. The only supported types are: json, form, query, header, cookie, and path.`,
     );
   }
 
@@ -39,9 +39,9 @@ export function schemaGenerator<T extends ZodSchema>(
 
 function _generateParametersFromZodObject(
   schema: ZodObject<any>,
-  _in: string
+  _in: string,
 ): any[] {
-  const shape = schema._def.shape();
+  const shape = schema.shape;
   const parameters: any[] = [];
 
   for (const key in shape) {
@@ -59,112 +59,135 @@ function _generateParametersFromZodObject(
 }
 
 const getRequiredKeys = (schema: ZodObject<any>) => {
-  const shape = schema._def.shape();
+  const shape = schema.shape;
   return Object.entries(shape)
     .filter(
-      ([, value]) => !(value as { isOptional?: () => boolean }).isOptional?.()
+      ([, value]) => !(value as { isOptional?: () => boolean }).isOptional?.(),
     )
     .map(([key]) => key);
 };
 
 export function zodToType(schema: ZodTypeAny): any {
-  const def = schema._def;
+  const def = schema.def as any; // Use any to access the dynamic properties
 
-  switch (def.typeName) {
-    case z.ZodFirstPartyTypeKind.ZodString: {
-      interface StringSchema {
-        type: string;
-        minLength?: number;
-        maxLength?: number;
-        format?: string;
-      }
-
-      const stringSchema: StringSchema = { type: 'string' };
-      if (def.checks) {
-        for (const check of def.checks) {
-          if (check.kind === 'min') stringSchema.minLength = check.value;
-          if (check.kind === 'max') stringSchema.maxLength = check.value;
-          if (check.kind === 'length') {
-            stringSchema.minLength = check.value;
-            stringSchema.maxLength = check.value;
-          }
-          if (check.kind === 'email') stringSchema.format = 'email';
-          if (check.kind === 'url') stringSchema.format = 'uri';
-          // ...add more if needed
-        }
-      }
-      return stringSchema;
+  // Use instanceof checks instead of typeName comparisons
+  if (schema instanceof z.ZodString) {
+    interface StringSchema {
+      type: string;
+      minLength?: number;
+      maxLength?: number;
+      format?: string;
     }
 
-    case z.ZodFirstPartyTypeKind.ZodNumber: {
-      const numberSchema: any = { type: 'number' };
-      if (def.checks) {
-        for (const check of def.checks) {
-          if (check.kind === 'min') numberSchema.minimum = check.value;
-          if (check.kind === 'max') numberSchema.maximum = check.value;
+    const stringSchema: StringSchema = { type: "string" };
+    if (def.checks) {
+      for (const check of def.checks) {
+        // Handle the new check structure in Zod v4
+        if (check.constructor.name === "$ZodCheckMinLength") {
+          stringSchema.minLength = (check as any)._zod?.def?.minimum;
+        } else if (check.constructor.name === "$ZodCheckMaxLength") {
+          stringSchema.maxLength = (check as any)._zod?.def?.maximum;
+        } else if (check.constructor.name === "$ZodCheckLengthEquals") {
+          const length = (check as any)._zod?.def?.length;
+          stringSchema.minLength = length;
+          stringSchema.maxLength = length;
+        } else if (check instanceof z.ZodEmail) {
+          stringSchema.format = "email";
+        } else if (check instanceof z.ZodURL) {
+          stringSchema.format = "uri";
         }
+        // Add more checks as needed
       }
-      return numberSchema;
     }
-
-    case z.ZodFirstPartyTypeKind.ZodBoolean:
-      return { type: 'boolean' };
-
-    case z.ZodFirstPartyTypeKind.ZodObject: {
-      const shape = def.shape();
-      const properties: Record<string, any> = {};
-      const required: string[] = [];
-
-      for (const key in shape) {
-        const prop = shape[key];
-        const propSchema = zodToType(prop);
-        properties[key] = propSchema;
-
-        if (!prop.isOptional()) {
-          required.push(key);
-        }
-      }
-
-      return {
-        type: 'object',
-        properties,
-        required: required, // Always include required array, even if empty
-      };
-    }
-
-    case z.ZodFirstPartyTypeKind.ZodArray:
-      return {
-        type: 'array',
-        items: zodToType(def.type),
-      };
-
-    case z.ZodFirstPartyTypeKind.ZodLiteral:
-      return { enum: [def.value] };
-
-    case z.ZodFirstPartyTypeKind.ZodEnum:
-      return {
-        type: 'string',
-        enum: def.values,
-      };
-
-    case z.ZodFirstPartyTypeKind.ZodUnion:
-      return {
-        oneOf: def.options.map(zodToType),
-      };
-
-    case z.ZodFirstPartyTypeKind.ZodNullable:
-      return {
-        ...zodToType(def.innerType),
-        nullable: true,
-      };
-
-    case z.ZodFirstPartyTypeKind.ZodDate:
-      return {
-        type: 'string',
-        format: 'date-time',
-      };
-
-    default:
-      return { type: 'string' }; // Fallback
+    return stringSchema;
   }
+
+  if (schema instanceof z.ZodNumber) {
+    const numberSchema: any = { type: "number" };
+    if (def.checks) {
+      for (const check of def.checks) {
+        if (check.constructor.name === "$ZodCheckGreaterThan") {
+          numberSchema.minimum = (check as any)._zod?.def?.value;
+        } else if (check.constructor.name === "$ZodCheckLessThan") {
+          numberSchema.maximum = (check as any)._zod?.def?.value;
+        }
+      }
+    }
+    return numberSchema;
+  }
+
+  if (schema instanceof z.ZodBoolean) {
+    return { type: "boolean" };
+  }
+
+  if (schema instanceof z.ZodObject) {
+    const shape = (schema as any).shape;
+    const properties: Record<string, any> = {};
+    const required: string[] = [];
+
+    for (const key in shape) {
+      const prop = shape[key];
+      const propSchema = zodToType(prop);
+      properties[key] = propSchema;
+
+      if (!prop.isOptional()) {
+        required.push(key);
+      }
+    }
+
+    return {
+      type: "object",
+      properties,
+      required: required, // Always include required array, even if empty
+    };
+  }
+
+  if (schema instanceof z.ZodArray) {
+    return {
+      type: "array",
+      items: zodToType(def.element),
+    };
+  }
+
+  if (schema instanceof z.ZodLiteral) {
+    // In Zod v4, literal values are stored in def.values array
+    return { enum: def.values || [def.value] };
+  }
+
+  if (schema instanceof z.ZodEnum) {
+    // In Zod v4, enum structure changed to use entries
+    const values = Object.values(def.entries);
+    return {
+      type: "string",
+      enum: values,
+    };
+  }
+
+  if (schema instanceof z.ZodUnion) {
+    return {
+      oneOf: def.options.map(zodToType),
+    };
+  }
+
+  if (schema instanceof z.ZodNullable) {
+    return {
+      ...zodToType(def.innerType),
+      nullable: true,
+    };
+  }
+
+  if (schema instanceof z.ZodOptional) {
+    // Handle ZodOptional by processing the inner type
+    return zodToType(def.innerType);
+  }
+
+  if (schema instanceof z.ZodDate) {
+    return {
+      type: "string",
+      format: "date-time",
+    };
+  }
+
+  // Fallback for any unhandled types
+  return { type: "string" };
 }

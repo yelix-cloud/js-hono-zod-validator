@@ -1,1 +1,1 @@
-export * from './src/zValidator.ts'
+export * from "./src/zValidator.ts";
