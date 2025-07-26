@@ -23,14 +23,14 @@ export function schemaGenerator<T extends ZodSchema>(
         schema: zodToType(schema),
       },
     };
-  } else if (['query', 'header', 'cookie', 'param'].includes(from)) {
+  } else if (["query", "header", "cookie", "param"].includes(from)) {
     oapiSchema = _generateParametersFromZodObject(
       schema as unknown as ZodObject<any>,
       from,
     );
   } else {
     console.warn(
-      `zValidatorYelix: The ${from} type is not supported. The only supported types are: json, form, query, header, cookie, and param.`
+      `zValidatorYelix: The ${from} type is not supported. The only supported types are: json, form, query, header, cookie, and param.`,
     );
   }
 
@@ -50,7 +50,7 @@ function _generateParametersFromZodObject(
     parameters.push({
       name: key,
       in: _in,
-      required: !prop.isOptional(),
+      required: !prop.isOptional() && !(prop instanceof z.ZodDefault),
       schema: propSchema,
     });
   }
@@ -62,7 +62,11 @@ const getRequiredKeys = (schema: ZodObject<any>) => {
   const shape = schema.shape;
   return Object.entries(shape)
     .filter(
-      ([, value]) => !(value as { isOptional?: () => boolean }).isOptional?.(),
+      ([, value]) => {
+        const val = value as any;
+        // A field is required if it's not optional and doesn't have a default value
+        return !val.isOptional?.() && !(val instanceof z.ZodDefault);
+      },
     )
     .map(([key]) => key);
 };
@@ -95,6 +99,12 @@ export function zodToType(schema: ZodTypeAny): any {
           stringSchema.format = "email";
         } else if (check instanceof z.ZodURL) {
           stringSchema.format = "uri";
+        } else if (check.constructor.name === "$ZodCheckRegex") {
+          // Handle regex patterns
+          const pattern = (check as any)._zod?.def?.pattern;
+          if (pattern) {
+            (stringSchema as any).pattern = pattern.source;
+          }
         }
         // Add more checks as needed
       }
@@ -130,7 +140,8 @@ export function zodToType(schema: ZodTypeAny): any {
       const propSchema = zodToType(prop);
       properties[key] = propSchema;
 
-      if (!prop.isOptional()) {
+      // A field is required if it's not optional and doesn't have a default value
+      if (!prop.isOptional() && !(prop instanceof z.ZodDefault)) {
         required.push(key);
       }
     }
@@ -179,6 +190,15 @@ export function zodToType(schema: ZodTypeAny): any {
   if (schema instanceof z.ZodOptional) {
     // Handle ZodOptional by processing the inner type
     return zodToType(def.innerType);
+  }
+
+  if (schema instanceof z.ZodDefault) {
+    // Handle ZodDefault - schemas with default values
+    const innerSchema = zodToType(def.innerType);
+    return {
+      ...innerSchema,
+      default: def.defaultValue, // Add the default value to OpenAPI schema
+    };
   }
 
   if (schema instanceof z.ZodDate) {
