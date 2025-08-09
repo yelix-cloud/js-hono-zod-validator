@@ -19,7 +19,7 @@ export function schemaGenerator<T extends ZodSchema>(
     };
   } else if (from === "form") {
     oapiSchema = {
-      "application/x-www-form-urlencoded": {
+      "multipart/form-data": {
         schema: zodToType(schema),
       },
     };
