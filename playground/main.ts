@@ -1,5 +1,7 @@
 import z from "zod";
 import { zodToType } from "../src/zodToType.ts";
+import { ZInfer, zValidatorYelix } from "../src/zValidator.ts";
+import { YelixHono } from "jsr:@yelix/hono";
 
 const schema = z.object({
   name: z.string().min(1).max(100),
@@ -23,3 +25,11 @@ const schema = z.object({
 
 const ot = zodToType(schema);
 console.log(ot); // { type: 'object', properties: { ... }, required: [ ... ] }
+
+const app = new YelixHono();
+
+app.post('/', zValidatorYelix('json', schema), (c) => {
+  const data: ZInfer<typeof schema> = c.req.valid('json' as never);
+  return c.json({ message: 'Validation successful', data });
+});
+

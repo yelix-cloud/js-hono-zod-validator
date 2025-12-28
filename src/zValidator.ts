@@ -1,6 +1,6 @@
 import { zValidator } from "@hono/zod-validator";
 import { YelixHonoMiddleware } from "@yelix/hono";
-import type { ZodSchema } from "zod";
+import type { ZodSchema, z } from "zod";
 import { schemaGenerator } from "./zodToType.ts";
 
 /**
@@ -29,5 +29,7 @@ function zValidatorYelix<T extends ZodSchema>(
   });
 }
 
+type ZInfer<T extends ZodSchema> = z.infer<T>;
+
 export { zValidatorYelix };
-export type { parsePaths };
+export type { parsePaths, ZInfer };
