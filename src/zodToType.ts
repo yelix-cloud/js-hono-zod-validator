@@ -43,13 +43,16 @@ function _generateParametersFromZodObject(
 ): any[] {
   const shape = schema.shape;
   const parameters: any[] = [];
+  
+  // Convert 'param' to 'path' for OpenAPI compatibility
+  const openApiIn = _in === 'param' ? 'path' : _in;
 
   for (const key in shape) {
     const prop = shape[key];
     const propSchema = zodToType(prop);
     parameters.push({
       name: key,
-      in: _in,
+      in: openApiIn,
       required: !prop.isOptional() && !(prop instanceof z.ZodDefault),
       schema: propSchema,
     });
