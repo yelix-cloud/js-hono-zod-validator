@@ -1,23 +1,44 @@
 {
   "version": "5",
   "specifiers": {
-    "jsr:@murat/openapi@~0.1.17": "0.1.17",
+    "jsr:@yelix/hono@~0.2.1": "0.2.1",
+    "jsr:@yelix/openapi@~0.1.17": "0.1.18",
+    "npm:@hono/zod-validator@~0.7.2": "0.7.6_hono@4.12.8_zod@4.0.14",
+    "npm:hono@^4.9.6": "4.12.8",
+    "npm:zod@^4.0.14": "4.0.14",
     "npm:zod@^4.0.5": "4.0.14"
   },
   "jsr": {
-    "@murat/openapi@0.1.17": {
-      "integrity": "3098b9cacb6493067d3c03fb257fd959eb0c187964136eee5cc0551876ce7799"
+    "@yelix/hono@0.2.1": {
+      "integrity": "b6f7cd9d4d7a98c506fd3208ac11e607effe7cd41bbc10bc1ac9e00bcc5153de",
+      "dependencies": [
+        "jsr:@yelix/openapi",
+        "npm:hono",
+        "npm:zod@^4.0.14"
+      ]
+    },
+    "@yelix/openapi@0.1.18": {
+      "integrity": "340e5dd8d644c37dca61e9ef10676d57609800e8457215f9fd7fcd6a3c81912b"
     }
   },
   "npm": {
+    "@hono/zod-validator@0.7.6_hono@4.12.8_zod@4.0.14": {
+      "integrity": "sha512-Io1B6d011Gj1KknV4rXYz4le5+5EubcWEU/speUjuw9XMMIaP3n78yXLhjd2A3PXaXaUwEAluOiAyLqhBEJgsw==",
+      "dependencies": [
+        "hono",
+        "zod"
+      ]
+    },
+    "hono@4.12.8": {
+      "integrity": "sha512-VJCEvtrezO1IAR+kqEYnxUOoStaQPGrCmX3j4wDTNOcD1uRPFpGlwQUIW8niPuvHXaTUxeOUl5MMDGrl+tmO9A=="
+    },
     "zod@4.0.14": {
       "integrity": "sha512-nGFJTnJN6cM2v9kXL+SOBq3AtjQby3Mv5ySGFof5UGRHrRioSJ5iG680cYNjE/yWk671nROcpPj4hAS8nyLhSw=="
     }
   },
   "workspace": {
     "dependencies": [
-      "jsr:@murat/openapi@~0.1.17",
-      "jsr:@yelix/hono@~0.1.29",
+      "jsr:@yelix/hono@~0.2.1",
       "npm:@hono/zod-validator@~0.7.2",
       "npm:zod@^4.0.5"
     ]

@@ -1,11 +1,11 @@
 {
   "name": "@yelix/zod-validator",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "license": "MIT",
   "exports": "./mod.ts",
   "imports": {
     "@hono/zod-validator": "npm:@hono/zod-validator@^0.7.2",
-    "@yelix/hono": "jsr:@yelix/hono@^0.1.29",
+    "@yelix/hono": "jsr:@yelix/hono@^0.2.1",
     "zod": "npm:zod@^4.0.5"
   },
   "tasks": {
